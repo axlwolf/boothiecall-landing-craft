@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +15,9 @@ import {
   Save
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-const AdminSettings = () => {
+const AdminSettingsContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -490,6 +490,14 @@ const AdminSettings = () => {
         </Tabs>
       </div>
     </div>
+  );
+};
+
+const AdminSettings = () => {
+  return (
+    <ProtectedRoute>
+      <AdminSettingsContent />
+    </ProtectedRoute>
   );
 };
 

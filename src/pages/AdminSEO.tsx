@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,8 +18,9 @@ import {
   XCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-const AdminSEO = () => {
+const AdminSEOContent = () => {
   const [seoScore, setSeoScore] = useState(85);
   
   const seoChecks = [
@@ -398,6 +398,14 @@ const AdminSEO = () => {
         </Tabs>
       </div>
     </div>
+  );
+};
+
+const AdminSEO = () => {
+  return (
+    <ProtectedRoute>
+      <AdminSEOContent />
+    </ProtectedRoute>
   );
 };
 

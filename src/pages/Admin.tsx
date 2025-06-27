@@ -13,10 +13,25 @@ import {
   FileText, 
   Image,
   Globe,
-  Shield
+  Shield,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useToast } from "@/hooks/use-toast";
 
-const Admin = () => {
+const AdminContent = () => {
+  const { logout } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Sesión Cerrada",
+      description: "Has cerrado sesión correctamente",
+    });
+  };
+
   const adminSections = [
     {
       title: "Gestión de Templates",
@@ -88,6 +103,14 @@ const Admin = () => {
                   Ver Sitio
                 </Button>
               </Link>
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4 mr-1" />
+                Cerrar Sesión
+              </Button>
             </div>
           </div>
         </div>
@@ -177,6 +200,14 @@ const Admin = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const Admin = () => {
+  return (
+    <ProtectedRoute>
+      <AdminContent />
+    </ProtectedRoute>
   );
 };
 
