@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Menu, X } from "lucide-react";
+import { useSmoothScroll } from "@/hooks/useSmoothScroll";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  useSmoothScroll();
 
   const menuItems = [
     { name: "Inicio", href: "#inicio" },
@@ -32,7 +34,7 @@ const Header = () => {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-gray-600 hover:text-luxury-600 font-medium transition-colors duration-200 relative group"
+                className="text-gray-600 hover:text-luxury-600 font-medium transition-colors duration-200 relative group cursor-pointer"
               >
                 {item.name}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-luxury-gradient transition-all duration-300 group-hover:w-full"></span>
@@ -66,7 +68,7 @@ const Header = () => {
                 <a
                   key={item.name}
                   href={item.href}
-                  className="text-gray-600 hover:text-luxury-600 font-medium transition-colors duration-200 py-2"
+                  className="text-gray-600 hover:text-luxury-600 font-medium transition-colors duration-200 py-2 cursor-pointer"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}

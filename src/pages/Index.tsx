@@ -7,8 +7,11 @@ import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import { useScrollAnimations } from "@/hooks/useScrollAnimations";
 
 const Index = () => {
+  useScrollAnimations();
+
   return (
     <div className="min-h-screen">
       <Header />
