@@ -28,24 +28,29 @@ export const useTemplateEditor = () => {
     loadTemplate();
   }, []);
 
-  // Auto-guardar cada 30 segundos
+  // Auto-guardar cada 10 segundos para testing
   useEffect(() => {
     const interval = setInterval(() => {
       if (elements.length > 0) {
+        console.log('Auto-saving template with elements:', elements.length);
         saveTemplate();
       }
-    }, 30000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [elements]);
 
   const loadTemplate = useCallback(async () => {
     try {
+      console.log('Loading template from localStorage...');
       const savedElements = LocalStorageService.getItem<ElementType[]>('current_template', []);
+      console.log('Loaded elements:', savedElements);
+      
       if (savedElements.length > 0) {
         setElements(savedElements);
         addToHistory(savedElements);
       } else {
+        console.log('No saved template found, creating default...');
         // Template por defecto
         const defaultElements: ElementType[] = [
           {
@@ -71,6 +76,9 @@ export const useTemplateEditor = () => {
         ];
         setElements(defaultElements);
         addToHistory(defaultElements);
+        // Guardar el template por defecto
+        LocalStorageService.setItem('current_template', defaultElements);
+        console.log('Default template saved');
       }
     } catch (error) {
       console.error('Error loading template:', error);
@@ -79,7 +87,9 @@ export const useTemplateEditor = () => {
 
   const saveTemplate = useCallback(async () => {
     try {
+      console.log('Saving template with', elements.length, 'elements...');
       LocalStorageService.setItem('current_template', elements);
+      console.log('Template saved to localStorage');
       
       // Guardar en IndexedDB también
       const templateData = {
@@ -89,8 +99,8 @@ export const useTemplateEditor = () => {
         lastModified: new Date()
       };
       await IndexedDBService.saveTemplate(templateData);
+      console.log('Template saved to IndexedDB');
       
-      console.log('Template saved successfully');
     } catch (error) {
       console.error('Error saving template:', error);
     }
@@ -101,9 +111,11 @@ export const useTemplateEditor = () => {
     newHistory.push([...newElements]);
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
+    console.log('Added to history, total history entries:', newHistory.length);
   }, [history, historyIndex]);
 
   const addElement = useCallback((type: 'text' | 'image' | 'shape') => {
+    console.log('Adding new element of type:', type);
     const baseElement = {
       id: Date.now(),
       x: 100,
@@ -145,9 +157,11 @@ export const useTemplateEditor = () => {
     const newElements = [...elements, newElement];
     setElements(newElements);
     addToHistory(newElements);
+    console.log('Element added, total elements:', newElements.length);
   }, [elements, addToHistory]);
 
   const updateElement = useCallback((id: number, updates: Partial<ElementType>) => {
+    console.log('Updating element', id, 'with updates:', updates);
     const newElements = elements.map(el => 
       el.id === id ? { ...el, ...updates } : el
     );
@@ -156,6 +170,7 @@ export const useTemplateEditor = () => {
   }, [elements, addToHistory]);
 
   const deleteElement = useCallback((id: number) => {
+    console.log('Deleting element with id:', id);
     const newElements = elements.filter(el => el.id !== id);
     setElements(newElements);
     addToHistory(newElements);
@@ -165,6 +180,7 @@ export const useTemplateEditor = () => {
   const duplicateElement = useCallback((id: number) => {
     const element = elements.find(el => el.id === id);
     if (element) {
+      console.log('Duplicating element:', id);
       const newElement: ElementType = { 
         ...element, 
         id: Date.now(), 
@@ -179,6 +195,7 @@ export const useTemplateEditor = () => {
 
   const undo = useCallback(() => {
     if (historyIndex > 0) {
+      console.log('Undoing to history index:', historyIndex - 1);
       const newIndex = historyIndex - 1;
       setElements([...history[newIndex]]);
       setHistoryIndex(newIndex);
@@ -187,6 +204,7 @@ export const useTemplateEditor = () => {
 
   const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
+      console.log('Redoing to history index:', historyIndex + 1);
       const newIndex = historyIndex + 1;
       setElements([...history[newIndex]]);
       setHistoryIndex(newIndex);
@@ -195,6 +213,7 @@ export const useTemplateEditor = () => {
 
   const createBackup = useCallback(async () => {
     try {
+      console.log('Creating backup...');
       const backupData = {
         elements,
         config: LocalStorageService.getItem('template_config', {}),

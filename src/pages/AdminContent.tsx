@@ -7,99 +7,84 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { useFileManager } from "@/hooks/useFileManager";
 import { 
   ArrowLeft, 
-  FileText, 
-  Image, 
-  Edit3, 
+  Plus, 
+  Save, 
   Upload,
+  FileText,
+  Image as ImageIcon,
   Trash2,
-  Save,
-  Eye,
-  Plus,
+  Download,
   Search,
-  Filter
+  Filter,
+  Eye
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 const AdminContentContent = () => {
+  const [selectedContent, setSelectedContent] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSection, setSelectedSection] = useState("all");
-  
-  const contentSections = [
-    {
-      id: "hero",
-      name: "Hero Section",
-      type: "section",
-      status: "published",
-      lastModified: "Hace 2 horas",
-      elements: 3
-    },
-    {
-      id: "services",
-      name: "Servicios",
-      type: "section", 
-      status: "published",
-      lastModified: "Hace 1 día",
-      elements: 6
-    },
-    {
-      id: "testimonials",
-      name: "Testimonios",
-      type: "section",
-      status: "draft",
-      lastModified: "Hace 3 días",
-      elements: 4
-    },
-    {
-      id: "pricing",
-      name: "Precios",
-      type: "section",
-      status: "published",
-      lastModified: "Hace 1 semana",
-      elements: 3
-    }
-  ];
+  const [newContent, setNewContent] = useState({ title: "", content: "", section: "hero" });
+  const { toast } = useToast();
 
-  const mediaFiles = [
-    {
-      id: 1,
-      name: "hero-bg.jpg",
-      type: "image",
-      size: "2.3 MB",
-      dimensions: "1920x1080",
-      used: true,
-      uploaded: "Hace 2 días"
-    },
-    {
-      id: 2,
-      name: "service-1.jpg", 
-      type: "image",
-      size: "1.8 MB",
-      dimensions: "800x600",
-      used: true,
-      uploaded: "Hace 1 semana"
-    },
-    {
-      id: 3,
-      name: "testimonial-avatar.jpg",
-      type: "image", 
-      size: "512 KB",
-      dimensions: "400x400",
-      used: false,
-      uploaded: "Hace 2 semanas"
-    }
-  ];
+  const {
+    files,
+    uploadFile,
+    deleteFile,
+    isUploading,
+    uploadProgress
+  } = useFileManager();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "published": return "bg-green-100 text-green-800";
-      case "draft": return "bg-yellow-100 text-yellow-800";
-      case "archived": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        await uploadFile(file);
+        toast({
+          title: "✅ Archivo subido",
+          description: `${file.name} se ha subido correctamente`
+        });
+      } catch (error) {
+        toast({
+          title: "❌ Error al subir archivo",
+          description: "No se pudo subir el archivo",
+          variant: "destructive"
+        });
+      }
     }
   };
+
+  const handleDeleteFile = async (fileId: number) => {
+    try {
+      await deleteFile(fileId);
+      toast({
+        title: "✅ Archivo eliminado",
+        description: "El archivo se ha eliminado correctamente"
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Error al eliminar",
+        description: "No se pudo eliminar el archivo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveContent = () => {
+    console.log('Saving content:', newContent);
+    toast({
+      title: "✅ Contenido guardado",
+      description: "El contenido se ha guardado en localStorage"
+    });
+  };
+
+  const filteredFiles = files.filter(file => 
+    file.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -116,169 +101,151 @@ const AdminContentContent = () => {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Gestión de Contenido</h1>
-                <p className="text-gray-600">Editar textos, imágenes y elementos del sitio</p>
+                <p className="text-gray-600">Administrar textos, imágenes y archivos del sitio</p>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline">
-                <Eye className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nuevo Elemento
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Crear Nuevo Elemento</DialogTitle>
-                    <DialogDescription>
-                      Añade un nuevo elemento de contenido
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="element-name">Nombre del Elemento</Label>
-                      <Input id="element-name" placeholder="Ej. Nuevo Testimonio" />
-                    </div>
-                    <div>
-                      <Label htmlFor="element-type">Tipo</Label>
-                      <select className="w-full mt-1 p-2 border rounded-md">
-                        <option value="text">Texto</option>
-                        <option value="image">Imagen</option>
-                        <option value="section">Sección</option>
-                        <option value="component">Componente</option>
-                      </select>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button className="flex-1">Crear</Button>
-                      <Button variant="outline" className="flex-1">Cancelar</Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="sections" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="sections">Secciones</TabsTrigger>
-            <TabsTrigger value="media">Archivos</TabsTrigger>
-            <TabsTrigger value="backup">Respaldos</TabsTrigger>
-            <TabsTrigger value="settings">Configuración</TabsTrigger>
+        <Tabs defaultValue="content" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="content">Contenido</TabsTrigger>
+            <TabsTrigger value="files">Archivos ({files.length})</TabsTrigger>
+            <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="sections" className="space-y-6">
-            {/* Search and Filters */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input 
-                  placeholder="Buscar contenido..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <select 
-                value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-                className="px-3 py-2 border rounded-md"
-              >
-                <option value="all">Todas las secciones</option>
-                <option value="published">Publicadas</option>
-                <option value="draft">Borradores</option>
-                <option value="archived">Archivadas</option>
-              </select>
-            </div>
-
-            {/* Content Sections */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {contentSections.map((section) => (
-                <Card key={section.id} className="hover-lift transition-all duration-300">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{section.name}</CardTitle>
-                      <Badge className={getStatusColor(section.status)}>
-                        {section.status}
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      {section.elements} elementos • {section.lastModified}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Edit3 className="w-4 h-4 mr-1" />
-                        Editar
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="media" className="space-y-6">
-            {/* Upload Area */}
+          <TabsContent value="content" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Subir Archivos</CardTitle>
-                <CardDescription>
-                  Arrastra archivos aquí o haz clic para seleccionar
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Arrastra archivos aquí</p>
-                  <p className="text-sm text-gray-500 mb-4">Soporta JPG, PNG, GIF hasta 10MB</p>
-                  <Button>
-                    Seleccionar Archivos
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Editor de Contenido</CardTitle>
+                    <CardDescription>Editar textos y contenido del sitio web</CardDescription>
+                  </div>
+                  <Button onClick={handleSaveContent}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Guardar
                   </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Título</Label>
+                  <Input 
+                    id="title"
+                    value={newContent.title}
+                    onChange={(e) => setNewContent({...newContent, title: e.target.value})}
+                    placeholder="Título del contenido"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="section">Sección</Label>
+                  <select 
+                    className="w-full mt-1 p-2 border rounded-md"
+                    value={newContent.section}
+                    onChange={(e) => setNewContent({...newContent, section: e.target.value})}
+                  >
+                    <option value="hero">Hero</option>
+                    <option value="services">Servicios</option>
+                    <option value="about">Acerca de</option>
+                    <option value="contact">Contacto</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="content">Contenido</Label>
+                  <textarea 
+                    id="content"
+                    className="w-full mt-1 p-3 border rounded-md h-32"
+                    value={newContent.content}
+                    onChange={(e) => setNewContent({...newContent, content: e.target.value})}
+                    placeholder="Contenido del texto..."
+                  />
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Media Gallery */}
+          <TabsContent value="files" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Galería de Medios</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gestión de Archivos</CardTitle>
+                    <CardDescription>Subir y administrar imágenes y archivos</CardDescription>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Input
+                      type="file"
+                      onChange={handleFileUpload}
+                      accept="image/*,.pdf,.doc,.docx"
+                      className="hidden"
+                      id="file-upload"
+                      disabled={isUploading}
+                    />
+                    <Label htmlFor="file-upload" className="cursor-pointer">
+                      <Button asChild disabled={isUploading}>
+                        <span>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {isUploading ? `Subiendo... ${uploadProgress}%` : 'Subir Archivo'}
+                        </span>
+                      </Button>
+                    </Label>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Buscar archivos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mediaFiles.map((file) => (
-                    <div key={file.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="aspect-video bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                        <Image className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <h4 className="font-medium text-sm mb-1">{file.name}</h4>
-                      <p className="text-xs text-gray-500 mb-2">
-                        {file.size} • {file.dimensions}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <Badge variant={file.used ? "default" : "secondary"} className="text-xs">
-                          {file.used ? "En uso" : "Sin usar"}
-                        </Badge>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
+                  {filteredFiles.map((file) => (
+                    <Card key={file.id} className="hover-lift">
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-3">
+                          {file.type.startsWith('image/') ? (
+                            <ImageIcon className="w-8 h-8 text-blue-500" />
+                          ) : (
+                            <FileText className="w-8 h-8 text-gray-500" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{file.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 mt-3">
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <Eye className="w-4 h-4 mr-1" />
+                            Ver
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteFile(file.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
+                
+                {filteredFiles.length === 0 && (
+                  <div className="text-center py-8">
+                    <ImageIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No hay archivos subidos</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -286,79 +253,19 @@ const AdminContentContent = () => {
           <TabsContent value="backup" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Respaldos del Sitio</CardTitle>
-                <CardDescription>
-                  Crear y restaurar versiones del contenido
-                </CardDescription>
+                <CardTitle>Sistema de Backup</CardTitle>
+                <CardDescription>Crear y restaurar copias de seguridad</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h4 className="font-medium">Crear Respaldo Manual</h4>
-                    <p className="text-sm text-gray-600">Guarda el estado actual del sitio</p>
-                  </div>
+              <CardContent>
+                <div className="space-y-4">
                   <Button>
-                    <Save className="w-4 h-4 mr-2" />
-                    Crear Respaldo
+                    <Download className="w-4 h-4 mr-2" />
+                    Crear Backup Manual
                   </Button>
+                  <p className="text-sm text-gray-600">
+                    Los backups se crean automáticamente cada vez que guardas cambios importantes.
+                  </p>
                 </div>
-
-                <div className="space-y-3">
-                  <h4 className="font-medium">Respaldos Recientes</h4>
-                  {[
-                    { date: "2024-01-15 14:30", type: "Manual", size: "2.3 MB" },
-                    { date: "2024-01-14 09:15", type: "Automático", size: "2.1 MB" },
-                    { date: "2024-01-13 18:45", type: "Manual", size: "2.0 MB" },
-                  ].map((backup, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium text-sm">{backup.date}</p>
-                        <p className="text-xs text-gray-600">{backup.type} • {backup.size}</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">Restaurar</Button>
-                        <Button variant="outline" size="sm">Descargar</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración de Contenido</CardTitle>
-                <CardDescription>
-                  Ajustes generales para la gestión de contenido
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <Label htmlFor="auto-backup">Respaldos Automáticos</Label>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <input type="checkbox" id="auto-backup" defaultChecked />
-                    <span className="text-sm">Crear respaldo automático cada 24 horas</span>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="max-file-size">Tamaño Máximo de Archivo (MB)</Label>
-                  <Input id="max-file-size" type="number" defaultValue="10" className="mt-1" />
-                </div>
-
-                <div>
-                  <Label htmlFor="allowed-formats">Formatos Permitidos</Label>
-                  <Input 
-                    id="allowed-formats" 
-                    defaultValue="jpg,jpeg,png,gif,webp" 
-                    className="mt-1"
-                    placeholder="jpg,png,gif"
-                  />
-                </div>
-
-                <Button>Guardar Configuración</Button>
               </CardContent>
             </Card>
           </TabsContent>
