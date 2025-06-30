@@ -22,10 +22,49 @@ import {
   Redo
 } from "lucide-react";
 
+// Definir tipos apropiados
+interface BaseElement {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface TextElement extends BaseElement {
+  type: "text";
+  content: string;
+  styles: {
+    fontSize: string;
+    color: string;
+    fontWeight?: string;
+  };
+}
+
+interface ImageElement extends BaseElement {
+  type: "image";
+  src: string;
+  content?: string;
+  styles: {
+    borderRadius?: string;
+  };
+}
+
+interface ShapeElement extends BaseElement {
+  type: "shape";
+  content?: string;
+  styles: {
+    backgroundColor?: string;
+    borderRadius?: string;
+  };
+}
+
+type ElementType = TextElement | ImageElement | ShapeElement;
+
 const TemplateEditor = () => {
-  const [selectedDevice, setSelectedDevice] = useState("desktop");
-  const [selectedElement, setSelectedElement] = useState(null);
-  const [elements, setElements] = useState([
+  const [selectedDevice, setSelectedDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [selectedElement, setSelectedElement] = useState<number | null>(null);
+  const [elements, setElements] = useState<ElementType[]>([
     {
       id: 1,
       type: "text",
@@ -58,22 +97,22 @@ const TemplateEditor = () => {
     }
   ]);
 
-  const dragRef = useRef(null);
+  const dragRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  const handleDragStart = (e, elementId) => {
+  const handleDragStart = (e: React.MouseEvent, elementId: number) => {
     setIsDragging(true);
     setSelectedElement(elementId);
-    const rect = e.target.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     setDragStart({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
     });
   };
 
-  const handleDrag = (e) => {
-    if (!isDragging || !selectedElement) return;
+  const handleDrag = (e: React.MouseEvent) => {
+    if (!isDragging || !selectedElement || !dragRef.current) return;
     
     const canvasRect = dragRef.current.getBoundingClientRect();
     const newX = e.clientX - canvasRect.left - dragStart.x;
@@ -90,30 +129,59 @@ const TemplateEditor = () => {
     setIsDragging(false);
   };
 
-  const addElement = (type) => {
-    const newElement = {
+  const addElement = (type: "text" | "image" | "shape") => {
+    const baseElement = {
       id: Date.now(),
-      type,
-      content: type === "text" ? "Nuevo texto" : "",
-      src: type === "image" ? "/api/placeholder/150/100" : "",
       x: 100,
       y: 100,
-      width: type === "text" ? 200 : 150,
-      height: type === "text" ? 40 : 100,
-      styles: type === "text" ? { fontSize: "16px", color: "#000" } : {}
+      width: 150,
+      height: 100,
     };
+
+    let newElement: ElementType;
+
+    switch (type) {
+      case "text":
+        newElement = {
+          ...baseElement,
+          type: "text",
+          content: "Nuevo texto",
+          width: 200,
+          height: 40,
+          styles: { fontSize: "16px", color: "#000" }
+        };
+        break;
+      case "image":
+        newElement = {
+          ...baseElement,
+          type: "image",
+          src: "/api/placeholder/150/100",
+          styles: { borderRadius: "4px" }
+        };
+        break;
+      case "shape":
+        newElement = {
+          ...baseElement,
+          type: "shape",
+          styles: { backgroundColor: "#gray", borderRadius: "4px" }
+        };
+        break;
+      default:
+        return;
+    }
+
     setElements([...elements, newElement]);
   };
 
-  const deleteElement = (id) => {
+  const deleteElement = (id: number) => {
     setElements(elements.filter(el => el.id !== id));
     setSelectedElement(null);
   };
 
-  const duplicateElement = (id) => {
+  const duplicateElement = (id: number) => {
     const element = elements.find(el => el.id === id);
     if (element) {
-      const newElement = { 
+      const newElement: ElementType = { 
         ...element, 
         id: Date.now(), 
         x: element.x + 20, 
@@ -123,9 +191,9 @@ const TemplateEditor = () => {
     }
   };
 
-  const updateElementContent = (id, newContent) => {
+  const updateElementContent = (id: number, newContent: string) => {
     setElements(elements.map(el => 
-      el.id === id ? { ...el, content: newContent } : el
+      el.id === id && el.type === "text" ? { ...el, content: newContent } : el
     ));
   };
 
@@ -302,37 +370,46 @@ const TemplateEditor = () => {
         
         {selectedElement ? (
           <div className="space-y-4">
-            {elements.find(el => el.id === selectedElement)?.type === "text" && (
-              <div>
-                <Label htmlFor="content">Contenido</Label>
-                <Input
-                  id="content"
-                  value={elements.find(el => el.id === selectedElement)?.content || ""}
-                  onChange={(e) => updateElementContent(selectedElement, e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            )}
-            
-            <div>
-              <Label htmlFor="width">Ancho</Label>
-              <Input
-                id="width"
-                type="number"
-                value={elements.find(el => el.id === selectedElement)?.width || 0}
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="height">Alto</Label>
-              <Input
-                id="height"
-                type="number"
-                value={elements.find(el => el.id === selectedElement)?.height || 0}
-                className="mt-1"
-              />
-            </div>
+            {(() => {
+              const element = elements.find(el => el.id === selectedElement);
+              if (!element) return null;
+              
+              return (
+                <>
+                  {element.type === "text" && (
+                    <div>
+                      <Label htmlFor="content">Contenido</Label>
+                      <Input
+                        id="content"
+                        value={element.content || ""}
+                        onChange={(e) => updateElementContent(selectedElement, e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label htmlFor="width">Ancho</Label>
+                    <Input
+                      id="width"
+                      type="number"
+                      value={element.width}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="height">Alto</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      value={element.height}
+                      className="mt-1"
+                    />
+                  </div>
+                </>
+              );
+            })()}
           </div>
         ) : (
           <p className="text-gray-500 text-sm">
