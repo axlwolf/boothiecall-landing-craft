@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Monitor, 
   Smartphone, 
   Tablet,
-  Move,
   Type,
   Image,
   Square,
-  Circle,
   Trash2,
   Copy,
   Save,
@@ -21,85 +20,32 @@ import {
   Undo,
   Redo
 } from "lucide-react";
-
-// Definir tipos apropiados
-interface BaseElement {
-  id: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface TextElement extends BaseElement {
-  type: "text";
-  content: string;
-  styles: {
-    fontSize: string;
-    color: string;
-    fontWeight?: string;
-  };
-}
-
-interface ImageElement extends BaseElement {
-  type: "image";
-  src: string;
-  content?: string;
-  styles: {
-    borderRadius?: string;
-  };
-}
-
-interface ShapeElement extends BaseElement {
-  type: "shape";
-  content?: string;
-  styles: {
-    backgroundColor?: string;
-    borderRadius?: string;
-  };
-}
-
-type ElementType = TextElement | ImageElement | ShapeElement;
+import { useTemplateEditor } from "@/hooks/useTemplateEditor";
 
 const TemplateEditor = () => {
   const [selectedDevice, setSelectedDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const [selectedElement, setSelectedElement] = useState<number | null>(null);
-  const [elements, setElements] = useState<ElementType[]>([
-    {
-      id: 1,
-      type: "text",
-      content: "Título Principal",
-      x: 50,
-      y: 100,
-      width: 300,
-      height: 60,
-      styles: { fontSize: "32px", color: "#000", fontWeight: "bold" }
-    },
-    {
-      id: 2,
-      type: "text", 
-      content: "Subtítulo descriptivo",
-      x: 50,
-      y: 180,
-      width: 400,
-      height: 40,
-      styles: { fontSize: "18px", color: "#666" }
-    },
-    {
-      id: 3,
-      type: "image",
-      src: "/api/placeholder/200/150",
-      x: 500,
-      y: 100,
-      width: 200,
-      height: 150,
-      styles: { borderRadius: "8px" }
-    }
-  ]);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const { toast } = useToast();
+
+  const {
+    elements,
+    selectedElement,
+    setSelectedElement,
+    isDragging,
+    setIsDragging,
+    addElement,
+    updateElement,
+    deleteElement,
+    duplicateElement,
+    saveTemplate,
+    undo,
+    redo,
+    createBackup,
+    canUndo,
+    canRedo
+  } = useTemplateEditor();
 
   const dragRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const handleDragStart = (e: React.MouseEvent, elementId: number) => {
     setIsDragging(true);
@@ -118,83 +64,54 @@ const TemplateEditor = () => {
     const newX = e.clientX - canvasRect.left - dragStart.x;
     const newY = e.clientY - canvasRect.top - dragStart.y;
 
-    setElements(elements.map(el => 
-      el.id === selectedElement 
-        ? { ...el, x: Math.max(0, newX), y: Math.max(0, newY) }
-        : el
-    ));
+    updateElement(selectedElement, {
+      x: Math.max(0, newX),
+      y: Math.max(0, newY)
+    });
   };
 
   const handleDragEnd = () => {
     setIsDragging(false);
   };
 
-  const addElement = (type: "text" | "image" | "shape") => {
-    const baseElement = {
-      id: Date.now(),
-      x: 100,
-      y: 100,
-      width: 150,
-      height: 100,
-    };
-
-    let newElement: ElementType;
-
-    switch (type) {
-      case "text":
-        newElement = {
-          ...baseElement,
-          type: "text",
-          content: "Nuevo texto",
-          width: 200,
-          height: 40,
-          styles: { fontSize: "16px", color: "#000" }
-        };
-        break;
-      case "image":
-        newElement = {
-          ...baseElement,
-          type: "image",
-          src: "/api/placeholder/150/100",
-          styles: { borderRadius: "4px" }
-        };
-        break;
-      case "shape":
-        newElement = {
-          ...baseElement,
-          type: "shape",
-          styles: { backgroundColor: "#gray", borderRadius: "4px" }
-        };
-        break;
-      default:
-        return;
+  const handleSave = async () => {
+    try {
+      await saveTemplate();
+      toast({
+        title: "✅ Template guardado",
+        description: "Los cambios se han guardado correctamente"
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Error al guardar",
+        description: "No se pudo guardar el template",
+        variant: "destructive"
+      });
     }
-
-    setElements([...elements, newElement]);
   };
 
-  const deleteElement = (id: number) => {
-    setElements(elements.filter(el => el.id !== id));
-    setSelectedElement(null);
-  };
-
-  const duplicateElement = (id: number) => {
-    const element = elements.find(el => el.id === id);
-    if (element) {
-      const newElement: ElementType = { 
-        ...element, 
-        id: Date.now(), 
-        x: element.x + 20, 
-        y: element.y + 20 
-      };
-      setElements([...elements, newElement]);
+  const handleBackup = async () => {
+    try {
+      await createBackup();
+      toast({
+        title: "✅ Backup creado",
+        description: "Se ha creado un respaldo del template actual"
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Error al crear backup",
+        description: "No se pudo crear el respaldo",
+        variant: "destructive"
+      });
     }
   };
 
   const updateElementContent = (id: number, newContent: string) => {
-    setElements(elements.map(el => 
-      el.id === id && el.type === "text" ? { ...el, content: newContent } : el
-    ));
+    updateElement(id, { content: newContent });
+  };
+
+  const updateElementSize = (id: number, property: 'width' | 'height', value: number) => {
+    updateElement(id, { [property]: value });
   };
 
   const getDeviceClass = () => {
@@ -272,21 +189,43 @@ const TemplateEditor = () => {
         <div>
           <h3 className="font-medium mb-3">Acciones</h3>
           <div className="space-y-2">
-            <Button variant="outline" size="sm" className="w-full">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={undo}
+              disabled={!canUndo}
+            >
               <Undo className="w-4 h-4 mr-2" />
               Deshacer
             </Button>
-            <Button variant="outline" size="sm" className="w-full">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={redo}
+              disabled={!canRedo}
+            >
               <Redo className="w-4 h-4 mr-2" />
               Rehacer
             </Button>
-            <Button variant="outline" size="sm" className="w-full">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={handleSave}
+            >
               <Save className="w-4 h-4 mr-2" />
               Guardar
             </Button>
-            <Button variant="outline" size="sm" className="w-full">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={handleBackup}
+            >
               <Eye className="w-4 h-4 mr-2" />
-              Preview
+              Backup
             </Button>
           </div>
         </div>
@@ -394,6 +333,7 @@ const TemplateEditor = () => {
                       id="width"
                       type="number"
                       value={element.width}
+                      onChange={(e) => updateElementSize(selectedElement, 'width', parseInt(e.target.value))}
                       className="mt-1"
                     />
                   </div>
@@ -404,6 +344,7 @@ const TemplateEditor = () => {
                       id="height"
                       type="number"
                       value={element.height}
+                      onChange={(e) => updateElementSize(selectedElement, 'height', parseInt(e.target.value))}
                       className="mt-1"
                     />
                   </div>
