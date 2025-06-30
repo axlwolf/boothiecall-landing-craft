@@ -17,6 +17,8 @@ export interface MediaFile {
 export const useFileManager = () => {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     loadFiles();
@@ -49,6 +51,14 @@ export const useFileManager = () => {
     }
 
     try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Simular progreso de subida
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 20, 90));
+      }, 200);
+
       let dimensions = '';
       
       // Obtener dimensiones si es imagen
@@ -57,12 +67,19 @@ export const useFileManager = () => {
       }
 
       const fileId = await IndexedDBService.saveFile(file, { dimensions });
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
       await loadFiles(); // Recargar la lista
       
       return fileId;
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   }, [loadFiles]);
 
@@ -100,6 +117,8 @@ export const useFileManager = () => {
   return {
     files,
     isLoading,
+    isUploading,
+    uploadProgress,
     uploadFile,
     deleteFile,
     getFileUrl,
