@@ -45,6 +45,25 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Luxury color system */
+    --luxury-50: 328 100% 98%;
+    --luxury-100: 326 100% 96%;
+    --luxury-200: 326 77% 88%;
+    --luxury-300: 326 77% 78%;
+    --luxury-400: 326 77% 68%;
+    --luxury-500: 326 77% 58%;
+    --luxury-600: 326 77% 48%;
+    --luxury-700: 326 77% 38%;
+    --luxury-800: 326 77% 28%;
+    --luxury-900: 326 77% 18%;
+
+    /* Gold accent colors */
+    --gold-100: 45 100% 95%;
+    --gold-200: 45 100% 90%;
+    --gold-300: 45 100% 80%;
+    --gold-400: 45 100% 70%;
+    --gold-500: 45 100% 60%;
   }
 
   .dark {
@@ -93,15 +112,77 @@
 }
 
 @layer utilities {
+  /* Luxury gradient classes */
+  .bg-luxury-gradient {
+    background: linear-gradient(135deg, hsl(var(--luxury-500)), hsl(var(--gold-400)));
+  }
+  
   .text-luxury-gradient {
     @apply bg-luxury-gradient bg-clip-text text-transparent;
   }
   
+  .bg-luxury-gradient-subtle {
+    background: linear-gradient(135deg, hsl(var(--luxury-50)), hsl(var(--gold-100)));
+  }
+
+  /* Luxury color utilities */
+  .text-luxury-50 { color: hsl(var(--luxury-50)); }
+  .text-luxury-100 { color: hsl(var(--luxury-100)); }
+  .text-luxury-200 { color: hsl(var(--luxury-200)); }
+  .text-luxury-300 { color: hsl(var(--luxury-300)); }
+  .text-luxury-400 { color: hsl(var(--luxury-400)); }
+  .text-luxury-500 { color: hsl(var(--luxury-500)); }
+  .text-luxury-600 { color: hsl(var(--luxury-600)); }
+  .text-luxury-700 { color: hsl(var(--luxury-700)); }
+  .text-luxury-800 { color: hsl(var(--luxury-800)); }
+  .text-luxury-900 { color: hsl(var(--luxury-900)); }
+
+  .bg-luxury-50 { background-color: hsl(var(--luxury-50)); }
+  .bg-luxury-100 { background-color: hsl(var(--luxury-100)); }
+  .bg-luxury-200 { background-color: hsl(var(--luxury-200)); }
+  .bg-luxury-300 { background-color: hsl(var(--luxury-300)); }
+  .bg-luxury-400 { background-color: hsl(var(--luxury-400)); }
+  .bg-luxury-500 { background-color: hsl(var(--luxury-500)); }
+  .bg-luxury-600 { background-color: hsl(var(--luxury-600)); }
+  .bg-luxury-700 { background-color: hsl(var(--luxury-700)); }
+  .bg-luxury-800 { background-color: hsl(var(--luxury-800)); }
+  .bg-luxury-900 { background-color: hsl(var(--luxury-900)); }
+
+  .border-luxury-200 { border-color: hsl(var(--luxury-200)); }
+  .border-luxury-300 { border-color: hsl(var(--luxury-300)); }
+  .border-luxury-400 { border-color: hsl(var(--luxury-400)); }
+
+  /* Shadow utilities */
+  .shadow-luxury {
+    box-shadow: 0 10px 25px -3px hsl(var(--luxury-300) / 0.1), 0 4px 6px -2px hsl(var(--luxury-300) / 0.05);
+  }
+  
+  .shadow-luxury-hover {
+    box-shadow: 0 20px 25px -5px hsl(var(--luxury-400) / 0.1), 0 10px 10px -5px hsl(var(--luxury-400) / 0.04);
+  }
+  
+  /* Animation utilities */
   .hover-lift {
     @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-luxury-hover;
   }
   
   .glass-effect {
     @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  }
+
+  /* Animation keyframes and classes */
+  @keyframes animate-scale-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: animate-scale-in 0.6s ease-out;
   }
 }
